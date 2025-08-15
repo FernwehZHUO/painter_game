@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -135,13 +134,22 @@
             box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
             border: 2px solid transparent;
         }
-        .brush:hover:not(:disabled) {
+        .brush:hover:not([disabled]) {
             transform: translateY(-2px);
             box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
         }
-        .brush:active:not(:disabled) {
+        .brush:active:not([disabled]) {
             transform: translateY(1px);
             box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+        }
+        /* -- BUG FIX: CSS to style disabled brushes -- */
+        .brush[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+        }
+        .brush[disabled]:hover, .brush[disabled]:active {
+            transform: none;
         }
         .brush.highlight {
             transform: scale(1.1);
@@ -277,7 +285,6 @@
     </main>
 
     <script>
-        // JavaScript代码保持不变，功能完全保留
         const puzzles = [
             { name: "自定义关卡", isCustom: true },
             { name: "入门: F形 (4x5)", rows: 4, cols: 5, pattern: [['P','R','R','R','P'],['P','R','P','P','P'],['P','R','R','R','P'],['P','R','P','P','P']] },
@@ -387,16 +394,25 @@
                     elements.gameGrid.appendChild(cell);
                 }
             }
+            // -- BUG FIX: Brushes can only be used once --
             for (let i = 0; i < rows; i++) {
                 const brush = document.createElement('div');
                 brush.classList.add('brush', 'purple-brush');
-                brush.addEventListener('click', () => { if (!isAnimating) applyBrush('row', i, 'purple', true); });
+                brush.addEventListener('click', function() {
+                    if (isAnimating || this.hasAttribute('disabled')) return;
+                    applyBrush('row', i, 'purple', true);
+                    this.setAttribute('disabled', true);
+                });
                 elements.rowBrushes.appendChild(brush);
             }
             for (let i = 0; i < cols; i++) {
                 const brush = document.createElement('div');
                 brush.classList.add('brush', 'red-brush');
-                brush.addEventListener('click', () => { if (!isAnimating) applyBrush('col', i, 'red', true); });
+                brush.addEventListener('click', function() {
+                    if (isAnimating || this.hasAttribute('disabled')) return;
+                    applyBrush('col', i, 'red', true);
+                    this.setAttribute('disabled', true);
+                });
                 elements.colBrushes.appendChild(brush);
             }
         }
