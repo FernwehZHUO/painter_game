@@ -1,0 +1,497 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>涂色小刷匠 Pro by Chen Zhuo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient-start: #f3f5f9;
+            --bg-gradient-end: #e8ecf3;
+            --card-bg: #f0f3f8;
+            --border-color: #d1d9e6;
+            --shadow-light: rgba(255, 255, 255, 0.8);
+            --shadow-dark: rgba(163, 177, 198, 0.6);
+            --primary-color: #3d5af1;
+            --primary-hover: #304ffe;
+            --success-color: #00c853;
+            --info-color: #29b6f6;
+            --error-color: #f44336;
+            --purple: #8e24aa;
+            --red: #e53935;
+            --highlight-color: #ffab00;
+            --text-color: #444a5e;
+            --disabled-color: #bdc3c7;
+            --header-font: 'Poppins', sans-serif;
+        }
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-image: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        main {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+        }
+        .main-header {
+            text-align: center;
+        }
+        .main-header h1 {
+            font-family: var(--header-font);
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-color);
+            margin: 0;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px var(--shadow-light);
+        }
+        .controls-container, .panel, .info-panel {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+            transition: all 0.3s ease;
+        }
+        .controls-container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .main-controls, .custom-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+        }
+        #custom-controls-container.hidden { display: none; }
+        .game-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            width: 100%;
+        }
+        .panel {
+            text-align: center;
+        }
+        .panel h2 {
+            margin-top: 0;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        .grid-container {
+            display: grid;
+            border-radius: 12px;
+            background-color: #dde1e7;
+            padding: 5px;
+            gap: 4px;
+            box-shadow: inset 3px 3px 7px var(--shadow-dark), inset -3px -3px 7px var(--shadow-light);
+        }
+        #target-grid.editable .grid-cell { cursor: pointer; }
+        #target-grid.editable .grid-cell:hover { transform: scale(1.05); }
+        .grid-cell {
+            width: 35px;
+            height: 35px;
+            background-color: white;
+            border-radius: 8px;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        .purple { background-color: var(--purple); }
+        .red { background-color: var(--red); }
+        .game-area {
+            display: grid;
+            grid-template-areas: ". col-brushes" "row-brushes game-grid";
+            gap: 15px;
+        }
+        #game-grid { grid-area: game-grid; }
+        .row-brushes { grid-area: row-brushes; display: flex; flex-direction: column; gap: 4px; justify-content: space-around; }
+        .col-brushes { grid-area: col-brushes; display: flex; flex-direction: row; gap: 4px; justify-content: space-around; }
+        .brush {
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+            border: 2px solid transparent;
+        }
+        .brush:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+        }
+        .brush:active:not(:disabled) {
+            transform: translateY(1px);
+            box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+        }
+        .brush.highlight {
+            transform: scale(1.1);
+            border-color: var(--highlight-color);
+            box-shadow: 0 0 15px var(--highlight-color);
+        }
+        .brush.purple-brush { background-color: var(--purple); }
+        .brush.red-brush { background-color: var(--red); }
+        button, select {
+            padding: 12px 20px;
+            font-size: 16px;
+            font-family: 'Poppins', sans-serif;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            font-weight: 600;
+            box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+            transition: all 0.2s ease-in-out;
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+        }
+        select {
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23444a5e%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 1em top 50%;
+            background-size: .65em auto;
+            padding-right: 2.5em;
+        }
+        button:hover:not(:disabled), select:hover:not(:disabled) {
+            box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+            color: var(--primary-color);
+        }
+        button:active:not(:disabled), select:active:not(:disabled) {
+            box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+        }
+        button#solve-btn { background-color: var(--primary-color); color: white; }
+        button#solve-btn:hover:not(:disabled) { background-color: var(--primary-hover); color: white; }
+        button#random-btn { background-color: var(--success-color); color: white; }
+        button:disabled, select:disabled {
+            background-color: var(--disabled-color);
+            color: #7f8c8d;
+            cursor: not-allowed;
+            box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+        }
+        .info-panel {
+            width: 100%;
+            max-width: 800px;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .info-panel.default { border-color: #dbe0e8; }
+        .info-panel.success { background-color: var(--success-color); color: white; box-shadow: 0 4px 15px -5px var(--success-color); }
+        .info-panel.info { background-color: var(--info-color); color: white; box-shadow: 0 4px 15px -5px var(--info-color); }
+        .info-panel.editor { background-color: #fff3cd; color: #664d03; border-color: var(--highlight-color); }
+        .info-panel.error { background-color: var(--error-color); color: white; box-shadow: 0 4px 15px -5px var(--error-color); }
+        .main-footer {
+            text-align: center;
+            padding-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            font-weight: 600;
+        }
+        .main-footer a { color: var(--text-color); transition: color 0.3s; }
+        .main-footer a:hover { color: var(--primary-color); }
+        .main-footer svg { width: 28px; height: 28px; }
+
+        @media (max-width: 768px) {
+            .main-header h1 { font-size: 2rem; }
+            .game-container { flex-direction: column; align-items: center; }
+        }
+        @media (max-width: 480px) {
+            body { padding: 15px; }
+            .grid-cell, .brush { width: 28px; height: 28px; }
+            .main-controls, .custom-controls { flex-direction: column; width: 100%; }
+            .main-footer { font-size: 0.9rem; }
+            .main-footer svg { width: 24px; height: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <header class="main-header">
+            <h1>涂色小刷匠 Pro</h1>
+        </header>
+
+        <div class="controls-container">
+            <div class="main-controls">
+                <select id="puzzle-select"></select>
+                <button id="reset-btn">重置</button>
+                <button id="solve-btn">自动解答</button>
+            </div>
+            <div id="custom-controls-container" class="hidden">
+                 <hr style="width:100%; border:0; border-top:1px solid var(--border-color);">
+                <div class="custom-controls">
+                    <span>尺寸:</span><select id="rows-select"></select><span>&times;</span><select id="cols-select"></select>
+                    <button id="random-btn">随机生成可解地图</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="info-panel" class="info-panel default">选择一个谜题开始挑战吧！</div>
+        
+        <div class="game-container">
+            <div class="panel" id="target-panel">
+                <h2>目标图案</h2>
+                <div id="target-grid" class="grid-container"></div>
+            </div>
+            <div class="panel" id="player-panel">
+                <h2>你的画板</h2>
+                <div class="game-area">
+                    <div class="row-brushes"></div>
+                    <div class="col-brushes"></div>
+                    <div id="game-grid" class="grid-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="main-footer">
+            <p>Crafted by Chen Zhuo</p>
+            <a href="https://github.com/FernwehZHUO" target="_blank" rel="noopener noreferrer" title="View on GitHub">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.19.01-.82.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21-.15.46-.55.38A8.013 8.013 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
+                </svg>
+            </a>
+        </footer>
+    </main>
+
+    <script>
+        // JavaScript代码保持不变，功能完全保留
+        const puzzles = [
+            { name: "自定义关卡", isCustom: true },
+            { name: "入门: F形 (4x5)", rows: 4, cols: 5, pattern: [['P','R','R','R','P'],['P','R','P','P','P'],['P','R','R','R','P'],['P','R','P','P','P']] },
+            { name: "简单: 十字 (5x5)", rows: 5, cols: 5, pattern: [['P','P','R','P','P'],['P','P','R','P','P'],['R','R','R','R','R'],['P','P','R','P','P'],['P','P','R','P','P']] },
+            { name: "进阶: 棋盘格 (4x4)", rows: 4, cols: 4, pattern: [['P','R','P','R'],['R','P','R','P'],['P','R','P','R'],['R','P','R','P']] },
+            { name: "挑战: 画框 (6x6)", rows: 6, cols: 6, pattern: [['R','R','R','R','R','R'],['R','P','P','P','P','R'],['R','P','R','R','P','R'],['R','P','R','R','P','R'],['R','P','P','P','P','R'],['R','R','R','R','R','R']] },
+            { name: "大师: 漩涡 (6x6)", rows: 6, cols: 6, pattern: [['R','R','R','R','R','R'],['R','P','P','P','P','P'],['R','P','R','R','R','P'],['R','P','R','P','R','P'],['R','P','P','P','R','P'],['R','R','R','R','R','R']] },
+            { name: "专家: 井字 (#) (6x6)", rows: 6, cols: 6, pattern: [['P','P','R','P','P','R'],['P','P','R','P','P','R'],['R','R','R','R','R','R'],['P','P','R','P','P','R'],['P','P','R','P','P','R'],['R','R','R','R','R','R']] }
+        ];
+
+        let currentPuzzle; let isAnimating = false; let customRows = 5; let customCols = 5;
+        const elements = {
+            targetGrid: document.getElementById('target-grid'), gameGrid: document.getElementById('game-grid'),
+            rowBrushes: document.querySelector('.row-brushes'), colBrushes: document.querySelector('.col-brushes'),
+            infoPanel: document.getElementById('info-panel'), puzzleSelect: document.getElementById('puzzle-select'),
+            resetBtn: document.getElementById('reset-btn'), solveBtn: document.getElementById('solve-btn'),
+            targetPanel: document.getElementById('target-panel'), playerPanel: document.getElementById('player-panel'),
+            customControls: document.getElementById('custom-controls-container'), rowsSelect: document.getElementById('rows-select'),
+            colsSelect: document.getElementById('cols-select'), randomBtn: document.getElementById('random-btn')
+        };
+
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+        const setInfo = (message, type = 'default') => { elements.infoPanel.textContent = message; elements.infoPanel.className = `info-panel ${type}`; };
+
+        function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
+
+        function generateRandomSolvablePuzzle() {
+            if (isAnimating) return;
+            const rows = customRows, cols = customCols;
+            const operations = [];
+            for (let i = 0; i < rows; i++) operations.push({ type: 'row', index: i });
+            for (let i = 0; i < cols; i++) operations.push({ type: 'col', index: i });
+            shuffleArray(operations);
+            const newPattern = Array(rows).fill(0).map(() => Array(cols).fill(null));
+            operations.forEach(op => {
+                if (op.type === 'row') { for (let c = 0; c < cols; c++) newPattern[op.index][c] = 'P'; } 
+                else { for (let r = 0; r < rows; r++) newPattern[r][op.index] = 'R'; }
+            });
+            currentPuzzle.pattern = newPattern; currentPuzzle.rows = rows; currentPuzzle.cols = cols;
+            setupEditor();
+            setInfo('已生成一张随机可解地图！', 'success');
+        }
+
+        function handleCellClick(r, c) {
+            if (isAnimating || !currentPuzzle.isCustom) return;
+            const pattern = currentPuzzle.pattern;
+            pattern[r][c] = (pattern[r][c] === 'P') ? 'R' : 'P';
+            const cell = elements.targetGrid.querySelector(`[data-row='${r}'][data-col='${c}']`);
+            cell.className = `grid-cell ${pattern[r][c] === 'P' ? 'purple' : 'red'}`;
+        }
+        
+        function setupEditor() {
+            const { rows, cols } = currentPuzzle;
+            elements.targetPanel.querySelector('h2').textContent = '关卡编辑器';
+            elements.targetGrid.classList.add('editable');
+            elements.targetGrid.innerHTML = '';
+            elements.targetGrid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+            elements.targetGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-cell', currentPuzzle.pattern[r][c] === 'P' ? 'purple' : 'red');
+                    cell.dataset.row = r; cell.dataset.col = c;
+                    cell.addEventListener('click', () => handleCellClick(r, c));
+                    elements.targetGrid.appendChild(cell);
+                }
+            }
+        }
+
+        function initGame(puzzle) {
+            currentPuzzle = JSON.parse(JSON.stringify(puzzle));
+            elements.targetGrid.classList.remove('editable');
+            
+            if (currentPuzzle.isCustom) {
+                elements.customControls.classList.remove('hidden');
+                setInfo('设置尺寸，设计图案或生成随机地图！', 'editor');
+                currentPuzzle.rows = customRows; currentPuzzle.cols = customCols;
+                currentPuzzle.pattern = Array(customRows).fill(0).map(() => Array(customCols).fill('R'));
+                setupEditor();
+            } else {
+                elements.customControls.classList.add('hidden');
+                elements.targetPanel.querySelector('h2').textContent = '目标图案';
+                setInfo('点击刷子开始游戏！');
+                elements.targetGrid.innerHTML = '';
+                elements.targetGrid.style.gridTemplateRows = `repeat(${puzzle.rows}, 1fr)`;
+                elements.targetGrid.style.gridTemplateColumns = `repeat(${puzzle.cols}, 1fr)`;
+                puzzle.pattern.forEach((row, r) => {
+                    row.forEach((color, c) => {
+                        const cell = document.createElement('div');
+                        cell.classList.add('grid-cell', color === 'P' ? 'purple' : 'red');
+                        elements.targetGrid.appendChild(cell);
+                    });
+                });
+            }
+            setupPlayerArea(currentPuzzle);
+        }
+        
+        function setupPlayerArea({rows, cols}) {
+            ['gameGrid', 'rowBrushes', 'colBrushes'].forEach(key => elements[key].innerHTML = '');
+            elements.gameGrid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+            elements.gameGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            for (let r = 0; r < rows; r++) {
+                 for (let c = 0; c < cols; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-cell');
+                    cell.dataset.row = r; cell.dataset.col = c;
+                    elements.gameGrid.appendChild(cell);
+                }
+            }
+            for (let i = 0; i < rows; i++) {
+                const brush = document.createElement('div');
+                brush.classList.add('brush', 'purple-brush');
+                brush.addEventListener('click', () => { if (!isAnimating) applyBrush('row', i, 'purple', true); });
+                elements.rowBrushes.appendChild(brush);
+            }
+            for (let i = 0; i < cols; i++) {
+                const brush = document.createElement('div');
+                brush.classList.add('brush', 'red-brush');
+                brush.addEventListener('click', () => { if (!isAnimating) applyBrush('col', i, 'red', true); });
+                elements.colBrushes.appendChild(brush);
+            }
+        }
+
+        function applyBrush(type, index, color, isUserAction = false) {
+            elements.gameGrid.querySelectorAll('.grid-cell').forEach(cell => {
+                if ((type === 'row' && cell.dataset.row == index) || (type === 'col' && cell.dataset.col == index)) {
+                    cell.className = `grid-cell ${color}`;
+                }
+            });
+            if (isUserAction && !currentPuzzle.isCustom) checkWin();
+        }
+
+        function checkWin() {
+            const targetPattern = currentPuzzle.pattern;
+            const playerCells = elements.gameGrid.querySelectorAll('.grid-cell');
+            let isMatch = true;
+            for (let r = 0; r < currentPuzzle.rows; r++) {
+                for (let c = 0; c < currentPuzzle.cols; c++) {
+                    const cell = Array.from(playerCells).find(el => el.dataset.row == r && el.dataset.col == c);
+                    const cellColor = cell.classList.contains('purple') ? 'P' : (cell.classList.contains('red') ? 'R' : '');
+                    if (cellColor !== targetPattern[r][c]) {
+                        isMatch = false;
+                        break;
+                    }
+                }
+                if (!isMatch) break;
+            }
+            if (isMatch) {
+                setInfo(`恭喜你完成了【${currentPuzzle.name}】！`, 'success');
+            }
+        }
+        
+        async function solvePuzzle() {
+            if (isAnimating) return;
+            isAnimating = true;
+            [elements.solveBtn, elements.resetBtn, elements.puzzleSelect, elements.rowsSelect, elements.colsSelect, elements.randomBtn].forEach(el => el.disabled = true);
+            
+            setupPlayerArea(currentPuzzle);
+            setInfo('正在计算解决方案...', 'info');
+            
+            const { rows, cols, pattern } = currentPuzzle;
+            const nodes = [...Array(rows).keys()].map(i => `R${i}`).concat([...Array(cols).keys()].map(i => `C${i}`));
+            const adj = new Map(nodes.map(n => [n, []]));
+            const inDegree = new Map(nodes.map(n => [n, 0]));
+
+            for (let r = 0; r < rows; r++) { for (let c = 0; c < cols; c++) {
+                const rowNode = `R${r}`, colNode = `C${c}`;
+                if (pattern[r][c] === 'P') { adj.get(colNode).push(rowNode); inDegree.set(rowNode, inDegree.get(rowNode) + 1); } 
+                else { adj.get(rowNode).push(colNode); inDegree.set(colNode, inDegree.get(colNode) + 1); }
+            }}
+
+            const queue = nodes.filter(n => inDegree.get(n) === 0);
+            const result = [];
+            while (queue.length > 0) {
+                const u = queue.shift(); result.push(u);
+                for (const v of adj.get(u)) { inDegree.set(v, inDegree.get(v) - 1); if (inDegree.get(v) === 0) queue.push(v); }
+            }
+            
+            await sleep(500);
+            
+            if (result.length < nodes.length) { setInfo('此谜题无解！ (存在依赖循环)', 'error'); } 
+            else {
+                for (let i = 0; i < result.length; i++) {
+                    const step = result[i], type = step.startsWith('R') ? 'row' : 'col', index = parseInt(step.slice(1));
+                    const color = type === 'row' ? 'purple' : 'red', brushContainer = type === 'row' ? elements.rowBrushes : elements.colBrushes;
+                    const brushEl = brushContainer.children[index];
+                    setInfo(`动画演示中: 第 ${i + 1} / ${result.length} 步`, 'info');
+                    if (brushEl) {
+                        brushEl.classList.add('highlight'); applyBrush(type, index, color, false);
+                        await sleep(400); brushEl.classList.remove('highlight');
+                    }
+                }
+                setInfo('动画演示完成！', 'success');
+            }
+            isAnimating = false;
+            [elements.solveBtn, elements.resetBtn, elements.puzzleSelect, elements.rowsSelect, elements.colsSelect, elements.randomBtn].forEach(el => el.disabled = false);
+        }
+        
+        for (let i = 3; i <= 8; i++) { elements.rowsSelect.add(new Option(i, i)); elements.colsSelect.add(new Option(i, i)); }
+        elements.rowsSelect.value = customRows; elements.colsSelect.value = customCols;
+        puzzles.forEach((p, index) => elements.puzzleSelect.add(new Option(p.name, index)));
+        elements.puzzleSelect.addEventListener('change', (e) => initGame(puzzles[e.target.value]));
+        
+        elements.resetBtn.addEventListener('click', () => {
+             initGame(puzzles[elements.puzzleSelect.value]);
+        });
+
+        elements.solveBtn.addEventListener('click', solvePuzzle);
+        elements.randomBtn.addEventListener('click', generateRandomSolvablePuzzle);
+        elements.rowsSelect.addEventListener('change', (e) => { customRows = parseInt(e.target.value); initGame(puzzles[0]); });
+        elements.colsSelect.addEventListener('change', (e) => { customCols = parseInt(e.target.value); initGame(puzzles[0]); });
+
+        initGame(puzzles[1]);
+        elements.puzzleSelect.value = 1;
+    </script>
+</body>
+</html>
